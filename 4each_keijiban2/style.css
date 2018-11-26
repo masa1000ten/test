@@ -1,0 +1,144 @@
+html{
+    height: 100%;  
+}
+
+.logo img{
+    width: 450px;
+}
+
+
+
+/*ヘッダー*/
+header{
+    width: 100%;
+    height: 80px;
+    padding-right:10px;
+    padding-left:20px;
+    background-color:black;
+}
+
+header ul{
+    float: left;
+    line-height: 50px;
+}
+
+header ul li{
+    float: left;
+    list-style: none;
+    padding-right: 100px;
+    color: white;
+    font-size: 20px;
+}
+/*ヘッダー終了*/
+
+.main{
+  clear: both;
+  width: 100%;
+}
+
+.left{
+  float: left;
+  width: 70%;
+}
+
+.left h1{
+    margin-top: 30px;
+    border-left: 5px solid black;
+    border-bottom: 2px solid black;
+    padding-left:10px;
+}
+
+form{
+/*  margin: 0 auto;*/
+  background-color: ghostwhite;
+  border: 3px gainsboro solid;
+  width: 99%;
+  padding-bottom: 20px;
+}
+
+form div{
+  padding: 15px;
+}
+
+form h2{
+  margin: 0 auto;
+  margin-top: 25px;
+  margin-bottom: 5px;
+  margin-left: 25px;
+  border-left: 5px red solid;
+  padding-top: 5px;
+  padding-bottom: 5px;
+  padding-left: 10px;
+}
+
+.text,textarea{
+  border: 1px gainsboro solid;
+  padding: 5px;
+  color: gray;
+}
+
+.submit{
+  border: 1px lightgray solid;
+  padding: 5px 10px;
+  color: white;
+  background-color: darkgray;
+  border-radius: 5px;
+  border-bottom: 3px black solid;
+  margin-left: 15px;
+}
+
+.kiji{
+  background-color: ghostwhite;
+  border: 3px gainsboro solid;
+  width: 99%;
+  padding-bottom: 20px;
+  margin-top: 10px;
+  margin-bottom: 10px;
+}
+
+.nakami{
+  padding-left: 15px;
+  padding-right: 10px
+}
+
+.kiji h2{
+  border-bottom: 3px gainsboro solid;
+  
+}
+
+.right{
+  float: left;
+  width: 30%;
+  margin-top: 43px;
+}
+
+.right h2{
+  border-bottom: 2px dotted black;
+  padding-bottom: 0px;
+  margin-bottom: -10px;
+  margin-left: 20px;
+}
+
+.right ul{
+  padding-left:5px;
+  margin-left:45px;
+  padding-bottom: 10px;
+}
+
+.right li{
+  list-style: none;
+  margin-top: 5px;
+  padding-bottom: 8px;
+  font-size: 17px;
+}
+
+footer{
+  clear: left;
+  width: 100%;
+  height: 60px;
+  bottom: 0px;
+  color: white;
+  background-color: black;
+  text-align: center;
+  line-height: 60px;
+}
