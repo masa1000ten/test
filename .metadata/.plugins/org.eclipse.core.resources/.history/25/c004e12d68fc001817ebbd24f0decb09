@@ -1,0 +1,11 @@
+
+public class HelloWorld {
+
+	public static void main(String[] args) {
+		// Hello World! の出力
+		String abc = "山田";
+		System.out.println(abc + "さん");
+
+	}
+
+}
