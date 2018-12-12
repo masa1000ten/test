@@ -1,0 +1,14 @@
+
+public class HelloWorld {
+
+	public static void main(String[] args) {
+		// Hello World! の出力
+		int b = 22;
+
+		if(b >= 20){
+			System.out.println("成人");
+		}else{
+			System.out.println("未成年");
+		}
+	}
+}
