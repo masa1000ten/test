@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<session version="1.0">
+<refactoring clone="true" comment="&apos;game_sample&apos; での総称型引数の推測&#x0D;&#x0A;- 元のプロジェクト: &apos;game_sample&apos;&#x0D;&#x0A;- オリジナル要素:&#x0D;&#x0A;     jp.co.internous.action.shooting.java&#x0D;&#x0A;- clone() が受信側の型のインスタンスを戻すと見なす&#x0D;&#x0A;- 制約のない型の引数を raw のままにする" description="総称型引数の推測" element1="/src&lt;jp.co.internous.action{shooting.java" flags="6" id="org.eclipse.jdt.ui.infer.typearguments" leave="true" stamp="1547033505040" version="1.0"/>
+</session>

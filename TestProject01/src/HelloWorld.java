@@ -3,15 +3,12 @@ public class HelloWorld {
 
 	public static void main(String[] args) {
 		// Hello World! の出力
-		String a = "赤";
+		int i = 10;
 
-		switch(a){
-		case "赤":
-			System.out.println("赤組です");
-			break;
-		case "白":
-			System.out.println("白組です");
-			break;
-		}
+		do{
+			System.out.println(i);
+			i-=3;
+		}while(i >= 1);
+
 	}
 }

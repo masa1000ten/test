@@ -1,0 +1,454 @@
+package jp.co.internous.action;
+
+import java.applet.*;
+import java.awt.*;
+import java.awt.event.*;
+import java.io.*;
+import java.util.*;
+
+public class shooting extends Applet implements KeyListener,Runnable{
+    private final int GAME_CONFIG_DEMO = 0;      //ゲーム状態フラグ定数（タイトル画面時）
+    private final int GAME_CONFIG_PLAYING = 1;   //ゲーム状態フラグ定数（ゲーム中）
+    private final int GAME_CONFIG_CLEAR = 2;     //ゲーム状態フラグ定数（ゲームクリア時）
+    private int screenWidth;         //アプレット画面横幅
+    private int screenHeight;        //アプレット画面縦幅
+    private Jiki jiki;               //自機クラス
+    private EnemyInfo enemyInfo;     //敵機管理クラス
+    private Stage stage;             //ステージクラス
+    private int gameConfig;          //ゲーム状態フラグ
+    private boolean running;         //ゲームスレッドランニングフラグ
+    private Image offImage;          //画面バッファ
+    private int SPEED = 50;          //スリープタイム(ms)
+    private int sleepCount;          //スリープカウント
+    private boolean keyPressDown;    //下キー押下フラグ
+    private boolean keyPressUp;      //上キー押下フラグ
+    private boolean keyPressLeft;    //左キー押下フラグ
+    private boolean keyPressRight;   //右キー押下フラグ
+    private Thread gameThread;       //ゲームスレッド
+
+    public void init(){
+        screenWidth = getSize().width;    //アプレット画面横幅サイズ取得
+        screenHeight = getSize().height;  //アプレット画面縦幅サイズ取得
+        setBackground(Color.white);
+        offImage = createImage(screenWidth, screenHeight);
+    }
+
+    public void start(){
+        gameConfig = GAME_CONFIG_DEMO;
+        addKeyListener(this);
+    }
+    public void gameStart(){
+        /* 敵機管理クラスのインスタンス生成 */
+        enemyInfo = new EnemyInfo(screenWidth, screenHeight);
+
+        /* 自機クラスのインスタンス生成 */
+        jiki = new Jiki(screenWidth, screenHeight);
+
+        /* ステージクラスのインスタンス生成 */
+        stage = new Stage();
+        if(stage.openSeqFile("stage1.txt") == true){
+            gameConfig = GAME_CONFIG_PLAYING;
+            keyPressDown = false;
+            keyPressUp = false;
+            keyPressLeft = false;
+            keyPressRight = false;
+            sleepCount = 1;
+            running = true;
+            gameThread = new Thread(this);
+            gameThread.start();
+        }else{
+            System.out.println("read err");
+        }
+    }
+    public void gameEnd(){
+        running = false;
+        gameConfig = GAME_CONFIG_DEMO;
+        enemyInfo.destroy();
+        repaint();
+    }
+    public void gameClear(){
+        running = false;
+        gameConfig = GAME_CONFIG_CLEAR;
+        repaint();
+    }
+    public void keyPressed(KeyEvent e){
+        switch(gameConfig){
+            case GAME_CONFIG_DEMO:
+            case GAME_CONFIG_CLEAR:
+                if(e.VK_SPACE == e.getKeyCode()){
+                    this.gameStart();
+                }
+            case GAME_CONFIG_PLAYING:
+                switch(e.getKeyCode()){
+                    case KeyEvent.VK_DOWN:
+                        if(!keyPressDown){
+                            keyPressDown = true;
+                        }
+                        break;
+                    case KeyEvent.VK_UP:
+                        if(!keyPressUp){
+                            keyPressUp = true;
+                        }
+                        break;
+                    case KeyEvent.VK_LEFT:
+                        if(!keyPressLeft){
+                            keyPressLeft = true;
+                        }
+                        break;
+                    case KeyEvent.VK_RIGHT:
+                        if(!keyPressRight){
+                            keyPressRight = true;
+                        }
+                        break;
+                }
+        }
+    }
+    public void keyReleased(KeyEvent e){
+        switch(gameConfig){
+            case GAME_CONFIG_PLAYING:
+                switch(e.getKeyCode()){
+                    case KeyEvent.VK_DOWN:
+                        keyPressDown = false;
+                        break;
+                    case KeyEvent.VK_UP:
+                        keyPressUp = false;
+                        break;
+                    case KeyEvent.VK_LEFT:
+                        keyPressLeft = false;
+                        break;
+                    case KeyEvent.VK_RIGHT:
+                        keyPressRight = false;
+                        break;
+                }
+        }
+    }
+    public void keyTyped(KeyEvent e){
+    }
+    public void run(){
+        boolean judgeRet = false;
+        while(running){
+            try{
+                Thread.sleep(SPEED);
+
+                /* 自機移動処理 */
+                if(keyPressDown == true){
+                    jiki.movePosY(5);
+                }
+                if(keyPressUp == true){
+                    jiki.movePosY(-5);
+                }
+                if(keyPressLeft == true){
+                    jiki.movePosX(-5);
+                }
+                if(keyPressRight == true){
+                    jiki.movePosX(5);
+                }
+
+                /* 敵機発現待機処理 */
+                if(sleepCount > 0){
+                    sleepCount--;
+                }else{
+                    /* 敵機発現処理 */
+                    while(true){
+                        StringTokenizer st = new StringTokenizer(stage.readSeq());
+                        String cmd = st.nextToken();
+                        if(cmd.equals("sleep") == true){  //スリープコマンドであった場合
+                            sleepCount = Integer.parseInt(st.nextToken());
+                            break;
+                        }else if(cmd.equals("end") == true){  //エンドコマンドであった場合
+                            this.gameClear();
+                            break;
+                        }else{
+                            /* 新しい敵機の情報を取得し格納する */
+                            int x = Integer.parseInt(st.nextToken());
+                            int y = Integer.parseInt(st.nextToken());
+                            enemyInfo.setEnemy(x, y);
+                        }
+                    }
+                }
+                /* 敵機移動処理 */
+                enemyInfo.move();
+
+                /* 自機と敵機の当たり判定処理 */
+               judgeRet = enemyInfo.colJudge(jiki.getPosX(), jiki.getPosY(), jiki.getMcnWidth(), jiki.getMcnHeight());
+                if(judgeRet == true){  //当たっていた場合
+                    jiki.minuslifePoint();
+                    if(jiki.getlifePoint() < 0){
+                        this.gameEnd();
+                    }
+                }
+                repaint();
+
+            }catch(Exception e){System.out.println("loopng");}
+        }
+    }
+    public void paint(Graphics g){
+        Graphics gv = offImage.getGraphics();
+        gv.clearRect(0, 0, screenWidth, screenHeight);
+
+        switch(gameConfig){
+            case GAME_CONFIG_DEMO:
+                gv.drawString("Start SpaceKey", 110, 145);
+                break;
+            case GAME_CONFIG_CLEAR:
+                gv.drawString("Game Clear!!", 115, 145);
+                break;
+            case GAME_CONFIG_PLAYING:
+                jiki.paintScreen(gv);
+                enemyInfo.paintScreen(gv);
+                break;
+        }
+        g.drawImage(offImage, 0, 0, screenWidth, screenHeight, this);
+    }
+}
+
+/* 機体クラス（抽象クラス） */
+abstract class Machine{
+    protected int posx;          //X座標位置
+    protected int posy;          //Y座標位置
+    protected int lifePoint;     //ライフポイント
+    protected int mcnWidth;      //機体横幅
+    protected int mcnHeight;     //機体縦幅
+    protected int screenWidth;   //アプレット画面横幅
+    protected int screenHeight;  //アプレット画面縦幅
+
+    public void setPosX(int x){
+        posx = x;
+    }
+    public void setPosY(int y){
+        posy = y;
+    }
+    public int getPosX(){
+        return posx;
+    }
+    public int getPosY(){
+        return posy;
+    }
+    public int getMcnWidth(){
+        return mcnWidth;
+    }
+    public int getMcnHeight(){
+        return mcnHeight;
+    }
+    public void minuslifePoint(){
+        lifePoint -= 1;
+    }
+    public int getlifePoint(){
+        return lifePoint;
+    }
+    abstract void movePos();
+    abstract void movePosX(int dx);
+    abstract void movePosY(int dy);
+
+}
+
+/* 自機クラス */
+class Jiki extends Machine{
+
+    Jiki(int screenWidth, int screenHeight){
+        this.screenWidth = screenWidth;
+        this.screenHeight = screenHeight;
+        mcnWidth = 20;
+        mcnHeight = 20;
+        posx = 140;
+        posy = 240;
+    }
+
+
+    public void movePos(){
+    }
+
+    /* 自機移動（X座標）メソッド */
+    public void movePosX(int dx){
+        /* 自機の位置がアプレット画面内（X座標）に収まっているか判定 */
+        if(posx + dx + mcnWidth <= screenWidth && posx + dx >= 0){
+            posx += dx;
+        }
+    }
+
+    /* 自機移動（X座標）メソッド */
+    public void movePosY(int dy){
+        /* 自機の位置がアプレット画面内（Y座標）に収まっているか判定 */
+        if(posy + dy + mcnHeight <= screenHeight && posy + dy >= 0){
+            posy += dy;
+        }
+    }
+
+    /* 自機描画メソッド */
+    public void paintScreen(Graphics g){
+        g.setColor(Color.blue);
+        g.fillOval(posx, posy, mcnWidth, mcnHeight);
+    }
+}
+
+/* 敵機管理クラス */
+class EnemyInfo{
+    Hashtable enemy;   //敵機クラスのインスタンスを格納するハッシュテーブル
+    int screenWidth;   //アプレット画面横幅
+    int screenHeight;  //アプレット画面縦幅
+
+    Image backGrp = null;
+    int enemyNumber;
+
+    EnemyInfo(int screenWidth, int screenHeight){
+        this.screenWidth = screenWidth;
+        this.screenHeight = screenHeight;
+
+        enemy = new Hashtable();
+        enemyNumber = 0;
+    }
+
+    /* 敵機生成メソッド */
+    public void setEnemy(int x, int y){
+        Integer en;
+        en = new Integer(enemyNumber);
+        enemy.put(en, new Enemy(x, y, screenWidth, screenHeight, en.intValue()));
+        enemyNumber += 1;
+    }
+
+    /* 敵機破壊メソッド */
+    public void dieEnemy(int num){
+        Integer en;
+        en = new Integer(num);
+        enemy.remove(en);
+    }
+
+    /* 敵機移動メソッド */
+    public void move(){
+        Enumeration e = enemy.elements();
+        Enemy etemp;
+        while (e.hasMoreElements()){
+            etemp = (Enemy)e.nextElement();
+            etemp.movePos();    //敵機移動
+
+            /* 敵機が消滅したらハッシュテーブルから取り除く */
+            if(etemp.getDie() == true){
+                enemy.remove(etemp.getKey());
+            }
+        }
+    }
+    /* 当たり判定メソッド */
+    public boolean colJudge(int jx ,int jy, int jWidth, int jHeight){
+        boolean ret;
+        int ex;
+        int ey;
+        int eWidth;
+        int eHeight;
+
+        ret = false;
+        Enumeration e = enemy.elements();
+        Enemy etemp;
+        while (e.hasMoreElements()){
+            etemp = (Enemy)e.nextElement();
+            ex = etemp.getPosX();
+            ey = etemp.getPosY();
+            eWidth = etemp.mcnWidth;
+            eHeight = etemp.mcnHeight;
+            /* 当たり判定 */
+            if(ex < jx + jWidth && jx < ex + eWidth && ey < jy + jHeight && jy < ey + eHeight){
+                ret = true;
+            }
+        }
+        return ret;
+    }
+
+    /* 全敵機消滅メソッド */
+    public void destroy(){
+        Enumeration e = enemy.elements();
+        Enemy etemp;
+        while (e.hasMoreElements()){
+            etemp = (Enemy)e.nextElement();
+            enemy.remove(etemp.getKey());
+        }
+
+    }
+
+    /* 敵機描画メソッド */
+    public void paintScreen(Graphics g){
+        Enumeration e = enemy.elements();
+        Enemy etemp;
+        int posx;
+        int posy;
+
+        g.setColor(Color.DARK_GRAY);
+        while (e.hasMoreElements()){
+            etemp = (Enemy)e.nextElement();
+            posx = etemp.getPosX();
+            posy = etemp.getPosY();
+            g.fillOval(posx, posy, 20, 20);
+        }
+
+    }
+}
+
+/* 敵機クラス */
+class Enemy extends Machine{
+    int key;      //敵機クラスのインスタンス識別キー
+    boolean die;  //
+
+    Enemy(int posx, int posy, int screenWidth, int screenHeight, int key){
+        this.screenWidth = screenWidth;
+        this.screenHeight = screenHeight;
+        this.key = key;
+        mcnWidth = 20;
+        mcnHeight = 20;
+        this.posx = posx;
+        this.posy = posy;
+        die = false;
+    }
+    public void movePos(){
+        this.movePosY(5);
+    }
+    public void movePosX(int dx){
+        posx += dx;
+    }
+    public void movePosY(int dy){
+        if(screenHeight + mcnHeight > posy + dy){
+            posy += dy;
+        }else{
+            die = true;
+        }
+    }
+    public boolean getDie(){
+        return die;
+    }
+    public Integer getKey(){
+        return new Integer(key);
+    }
+
+}
+
+/* ステージクラス */
+class Stage{
+    BufferedReader seqReader = null;
+
+    Stage(){
+    }
+    public boolean openSeqFile(String filename){
+        boolean ret;
+        try{
+            if(seqReader != null){
+                seqReader.close();
+            }
+            InputStream is = getClass().getResource(filename).openStream();
+            InputStreamReader isr = new InputStreamReader(is);
+            seqReader = new BufferedReader(isr);
+            ret = true;
+        }catch(Exception e){
+            System.out.println("openng");
+            ret = false;
+        };
+        return ret;
+    }
+
+    public String readSeq(){
+        String str;
+        try{
+            str = seqReader.readLine();
+            return str;
+        }catch(Exception e){
+            return "ng";
+        }
+    }
+
+}
